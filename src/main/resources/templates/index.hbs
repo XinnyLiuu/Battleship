@@ -2,9 +2,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Battleship</title>
 </head>
 <body>
-    {{message}} {{name}}
+    {{#if authenticated}}
+        <h1>Hello, {{name}}</h1>
+    {{else}}
+        <h1>Please login!</h1>
+    {{/if}}
 </body>
 </html>
