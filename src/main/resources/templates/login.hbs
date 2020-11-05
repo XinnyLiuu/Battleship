@@ -1,16 +1,18 @@
-{{>partials/header}}
+{{>partials/header.hbs}}
 
-<div class="card container-lg">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" id="username">
+<div class="card container-lg mt-5">
+    <div class="p-5">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password">
+        </div>
+        <button id="loginBtn" class="btn btn-primary">Login</button>
+        <button id="registerBtn" class="btn btn-outline-primary">Don't have an account</button>
     </div>
-    <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" class="form-control" id="password">
-    </div>
-    <button id="loginBtn" class="btn btn-primary">Login</button>
-    <button id="registerBtn" class="btn btn-outline-primary">Don't have an account</button>
 </div>
 
 <script>
@@ -53,4 +55,4 @@
     });
 </script>
 
-{{>partials/footer}}
+{{>partials/footer.hbs}}
