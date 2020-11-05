@@ -1,0 +1,56 @@
+{{>partials/header}}
+
+<div class="card container-lg">
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username">
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" class="form-control" id="password">
+    </div>
+    <button id="loginBtn" class="btn btn-primary">Login</button>
+    <button id="registerBtn" class="btn btn-outline-primary">Don't have an account</button>
+</div>
+
+<script>
+    const loginBtn = document.querySelector("#loginBtn");
+    const registerBtn = document.querySelector("#registerBtn");
+    const navTitle = document.querySelector("#navTitle");
+
+    loginBtn.addEventListener("click", async () => {
+        const username = document.querySelector("#username").value.trim();
+        const password = document.querySelector("#password").value.trim();
+
+        if (!username && !password) {
+            alert("Username + Password empty!");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/user/login", {
+                method: "POST",
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+            });
+
+            if (res.status === 200) window.location.replace("/");
+            else throw new Error();
+        } catch (e) {
+            console.log(e);
+            alert("Error with request!");
+        }
+    });
+
+    registerBtn.addEventListener("click", () => {
+        window.location.replace("/register");
+    });
+
+    navTitle.addEventListener("click", () => {
+        window.location.replace("/");
+    });
+</script>
+
+{{>partials/footer}}

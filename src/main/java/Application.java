@@ -15,14 +15,32 @@ public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
-        // Default routes
-        get("/", (req, res) -> {
-            return render(Map.of(
-                    "authenticated", isAuthenticated(req)
-            ), "index.hbs");
+        staticFiles.location("/public");
+        before((req, res) -> log(req));
+
+        /*
+         * UI Routes
+         */
+        before("/", (req, res) -> {
+            if (!isAuthenticated(req)) res.redirect("/login");
+        });
+        before("/register", (req, res) -> {
+            if (isAuthenticated(req)) res.redirect("/");
+        });
+        before("/login", (req, res) -> {
+            if (isAuthenticated(req)) res.redirect("/");
         });
 
-        // API routes
+        get("/", (req, res) -> render(Map.of(
+                SessionVariables.STARTED, SessionManager.getSessionVariable(req, SessionVariables.STARTED),
+                SessionVariables.USERNAME, SessionManager.getSessionVariable(req, SessionVariables.USERNAME)
+        ), "/index.hbs"));
+        get("/register", (req, res) -> render(Map.of(), "/register.hbs"));
+        get("/login", (req, res) -> render(Map.of(), "/login.hbs"));
+
+        /*
+         * API Routes
+         */
         path("/api", () -> {
             // User API
             path("/user", () -> {
@@ -50,8 +68,10 @@ public class Application {
     }
 
     private static boolean isAuthenticated(Request req) {
-        System.out.println(req.session().attributes());
-
         return SessionManager.checkSessionVariableExists(req, SessionVariables.STARTED);
+    }
+
+    private static void log(Request req) {
+        LOGGER.info(String.format("[%s] %s %s", req.requestMethod(), req.url(), req.body()));
     }
 }
