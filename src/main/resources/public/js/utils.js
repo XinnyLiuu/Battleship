@@ -1,25 +1,24 @@
-// /**
-//  * Send POST request
-//  *
-//  * @param {*} url
-//  * @param {*} data
-//  */
-// async function post(url, data) {
-//     try {
-//         const res = await fetch(url, {
-//             method: "POST",
-//             body: JSON.stringify(data),
-//         });
+function setCookie(name, value, days) {
+    let expires = "";
 
-//         if (res.status === 200) {
-//             return new Promise((resolve, reject) => {
-//                 resolve(await res.text());
-//             })
-//         }
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
 
-//         throw new Error();
-//     } catch (e) {
-//         console.log(e);
-//         alert("Error with request!");
-//     }
-// }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+
+    return null;
+}

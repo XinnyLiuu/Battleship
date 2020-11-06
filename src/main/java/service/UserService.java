@@ -3,6 +3,7 @@ package service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import data.dao.UserDao;
 import data.table.User;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.session.SessionManager;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 public class UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
@@ -64,7 +66,10 @@ public class UserService {
         SessionManager.setSessionVariable(req, SessionVariables.PASSWORD, maybeUser.get().getPassword());
         SessionManager.setSessionVariable(req, SessionVariables.STARTED, true);
 
-        return "Success";
+        return String.valueOf(new JSONObject()
+                .put("username", maybeUser.get().getUsername())
+                .put("chatColor", generateRandomHexString())
+        );
     }
 
     /**
@@ -113,7 +118,10 @@ public class UserService {
         SessionManager.setSessionVariable(req, SessionVariables.PASSWORD, maybeUser.get().getPassword());
         SessionManager.setSessionVariable(req, SessionVariables.STARTED, true);
 
-        return "Success";
+        return String.valueOf(new JSONObject()
+                .put("username", maybeUser.get().getUsername())
+                .put("chatColor", generateRandomHexString())
+        );
     }
 
     /**
@@ -140,5 +148,11 @@ public class UserService {
         SessionManager.endSession(req);
 
         return "Success";
+    }
+
+    private static String generateRandomHexString() {
+        Random random = new Random();
+        int nextInt = random.nextInt(0xffffff + 1);
+        return String.format("#%06x", nextInt);
     }
 }

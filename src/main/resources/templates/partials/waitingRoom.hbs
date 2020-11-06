@@ -10,15 +10,76 @@
         width: 100%;
         left: 0;
     }
+
+    #chat {
+        height: 90%;
+        width: auto;
+    }
 </style>
 
 <div id="waiting-chat" class="card container-fluid m-3 p-3 bg-light">
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt magni modi non nesciunt atque eos cupiditate molestias
-    iusto culpa deserunt amet repellendus, facilis quod labore? Fuga in voluptatibus reprehenderit maiores!
+    <div id="chat" class="overflow-auto"></div>
+
     <div id="message-box" class="input-group">
-        <input type="text" class="form-control" placeholder="Enter message to send">
+        <input id="message" type="text" class="form-control" placeholder="Enter message to send">
         <div class="input-group-append">
-            <button class="btn btn-outline-secondary" type="button"><i class="far fa-paper-plane"></i></button>
+            <button id="send" class="btn btn-primary" type="button"><i
+                    class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 </div>
+
+<script>
+    const sendBtn = document.querySelector("#send");
+    const messageInput = document.querySelector("#message");
+    const chat = document.querySelector("#chat");
+
+    // Send a message, clear input
+    function sendMessage(ws, message) {
+        if (message) {
+            ws.send(message);
+            messageInput.value = "";
+        }
+    }
+
+    // Updates the chat all existing messages
+    function updateChat(message) {
+        const messageElement = document.createElement("p");
+        const data = JSON.parse(message.data);
+        messageElement.innerHTML = data.message;
+
+        if (data.type === "SYSTEM_TYPE") {
+            messageElement.style.color = "#343a40";
+            messageElement.style.fontWeight = "bold";
+        } else {
+            messageElement.style.color = data.color;
+        }
+
+        chat.appendChild(messageElement);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    // Create websocket connection
+    const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/waiting-room`);
+    websocket.onmessage = (msg) => updateChat(msg);
+    websocket.onclose = () => {
+        alert("Websocket closed!");
+        window.location.replace("/");
+    }
+    websocket.onerror = (e) => {
+        alert("Websocket error!");
+        console.error(e);
+    }
+
+    // Event listeners
+    sendBtn.addEventListener("click", () => {
+        sendMessage(websocket, messageInput.value)
+    });
+
+    messageInput.addEventListener("keypress", (e) => {
+        if (e.keyCode === 13) {
+            sendMessage(websocket, messageInput.value);
+        }
+    });
+
+</script>

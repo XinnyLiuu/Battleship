@@ -15,6 +15,7 @@
     </div>
 </div>
 
+<script src="/js/utils.js"></script>
 <script>
     const loginBtn = document.querySelector("#loginBtn");
     const registerBtn = document.querySelector("#registerBtn");
@@ -38,7 +39,19 @@
                 }),
             });
 
-            if (res.status === 200) window.location.replace("/");
+            if (res.status === 200) {
+                const json = await res.json();
+
+                if ("username" in json) {
+                    setCookie("username", json.username, 365);
+                }
+
+                if ("chatColor" in json) {
+                    setCookie("chatColor", json.chatColor, 365);
+                }
+
+                window.location.replace("/");
+            }
             else throw new Error();
         } catch (e) {
             console.log(e);

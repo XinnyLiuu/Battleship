@@ -1,3 +1,4 @@
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.UserService;
@@ -7,20 +8,32 @@ import spark.ModelAndView;
 import spark.Request;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static spark.Spark.*;
 
 public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
+    static Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
+    static List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
+
     public static void main(String[] args) {
         staticFiles.location("/public");
-        before((req, res) -> log(req));
+
+        /*
+         * Websockets
+         */
+        webSocket("/waiting-room", WaitingRoomService.class);
 
         /*
          * UI Routes
          */
+        before((req, res) -> log(req));
         before("/", (req, res) -> {
             if (!isAuthenticated(req)) res.redirect("/login");
         });
@@ -61,16 +74,34 @@ public class Application {
         });
     }
 
+    /**
+     * Renders the handlebars view alongside the data for the view
+     *
+     * @param model
+     * @param pathToViewFile
+     * @return
+     */
     private static String render(Map<Object, Object> model, String pathToViewFile) {
         return new HandlebarsTemplateEngine().render(
                 new ModelAndView(model, pathToViewFile)
         );
     }
 
+    /**
+     * Verifies that there is a session for the request
+     *
+     * @param req
+     * @return
+     */
     private static boolean isAuthenticated(Request req) {
         return SessionManager.checkSessionVariableExists(req, SessionVariables.STARTED);
     }
 
+    /**
+     * Logs all requests
+     *
+     * @param req
+     */
     private static void log(Request req) {
         LOGGER.info(String.format("[%s] %s %s", req.requestMethod(), req.url(), req.body()));
     }
