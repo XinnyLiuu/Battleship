@@ -14,9 +14,10 @@ import java.util.stream.Collectors;
 
 @WebSocket
 public class WaitingRoomService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomService.class);
+
     public static final String USER_BROADCAST_TYPE = "USER_TYPE";
     public static final String SYSTEM_BROADCAST_TYPE = "SYSTEM_TYPE";
-    private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomService.class);
     private static final long TIMEOUT = 900000;
     private static final String SESSION_ID = "JSESSIONID";
     private static final String USERNAME = "username";
@@ -43,6 +44,7 @@ public class WaitingRoomService {
                         json.put("message", fullMessage);
                         json.put("type", type);
                         json.put("color", chatColor);
+                        json.put("users", Application.waitingRoomUsersList);
 
                         session.getRemote().sendString(String.valueOf(json));
                     } catch (Exception e) {
@@ -80,6 +82,7 @@ public class WaitingRoomService {
         if (!Application.waitingRoomUsersMap.containsKey(sessionId)) {
             String message = String.format("(%s joined the chat)", username);
 
+            Application.waitingRoomUsersList.add(username);
             Application.waitingRoomUsersMap.put(sessionId, session);
             broadcastMessage("", message, SYSTEM_BROADCAST_TYPE, chatColor);
         }
@@ -96,6 +99,7 @@ public class WaitingRoomService {
 
         String message = String.format("(%s left the chat)", username);
 
+        Application.waitingRoomUsersList.remove(username);
         Application.waitingRoomUsersMap.remove(sessionId);
         broadcastMessage("", message, SYSTEM_BROADCAST_TYPE, chatColor);
     }

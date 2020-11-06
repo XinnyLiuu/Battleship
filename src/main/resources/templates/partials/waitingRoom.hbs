@@ -15,24 +15,40 @@
         height: 90%;
         width: auto;
     }
+
+    #user-list-container {
+        height: 500px;
+        width: auto;
+    }
 </style>
 
-<div id="waiting-chat" class="card container-fluid m-3 p-3 bg-light">
-    <div id="chat" class="overflow-auto"></div>
+<div class="container-fluid">
+    <div class="row p-4">
+        <div id="waiting-chat" class="card col-md-9 p-4 bg-light">
+            <div id="chat" class="overflow-auto"></div>
 
-    <div id="message-box" class="input-group">
-        <input id="message" type="text" class="form-control" placeholder="Enter message to send">
-        <div class="input-group-append">
-            <button id="send" class="btn btn-primary" type="button"><i
-                    class="fas fa-paper-plane"></i></button>
+            <div id="message-box" class="input-group">
+                <input id="message" type="text" class="form-control" placeholder="Enter message to send">
+                <div class="input-group-append">
+                    <button id="send" class="btn btn-primary" type="button"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="user-list-container" class="col-md-3 p-4 bg-light overflow-auto">
+            <h6>Available Users: <span id="user-count" class="badge badge-secondary">0</span></h6>
+            <ul id="user-list" class="list-group"></ul>
         </div>
     </div>
 </div>
+
 
 <script>
     const sendBtn = document.querySelector("#send");
     const messageInput = document.querySelector("#message");
     const chat = document.querySelector("#chat");
+    const userList = document.querySelector("#user-list");
+    const userCount = document.querySelector("#user-count");
 
     // Send a message, clear input
     function sendMessage(ws, message) {
@@ -44,8 +60,10 @@
 
     // Updates the chat all existing messages
     function updateChat(message) {
-        const messageElement = document.createElement("p");
         const data = JSON.parse(message.data);
+
+        // Append message to chat ui
+        const messageElement = document.createElement("p");
         messageElement.innerHTML = data.message;
 
         if (data.type === "SYSTEM_TYPE") {
@@ -57,6 +75,22 @@
 
         chat.appendChild(messageElement);
         chat.scrollTop = chat.scrollHeight;
+
+        // Append current users to user list ui
+        if (!data.users.length) {
+            userList.innerHTML = "There's no one available right now :(";
+        }
+
+        userList.innerHTML = "";
+        userCount.innerHTML = data.users.length;
+
+        for (const user of data.users) {
+            const listElement = document.createElement("li");
+            listElement.innerHTML = user;
+            listElement.className = "list-group-item";
+
+            userList.append(listElement);
+        }
     }
 
     // Create websocket connection

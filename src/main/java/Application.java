@@ -20,6 +20,7 @@ public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
     static Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
+    static List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
     static List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
 
     public static void main(String[] args) {
