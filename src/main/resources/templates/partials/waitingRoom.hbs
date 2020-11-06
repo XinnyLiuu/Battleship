@@ -1,4 +1,8 @@
 <style>
+    .request-btn {
+        float: right;
+    }
+
     #waiting-chat {
         height: 500px;
         width: auto;
@@ -36,7 +40,7 @@
         </div>
 
         <div id="user-list-container" class="col-md-3 p-4 bg-light overflow-auto">
-            <h6>Available Users: <span id="user-count" class="badge badge-secondary">0</span></h6>
+            <h6>Available Users: <span id="user-count" class="badge badge-primary">0</span></h6>
             <ul id="user-list" class="list-group"></ul>
         </div>
     </div>
@@ -89,6 +93,12 @@
             listElement.innerHTML = user;
             listElement.className = "list-group-item";
 
+            const requestBtnElement = document.createElement("button");
+            requestBtnElement.type = "button";
+            requestBtnElement.className = "btn btn-outline-primary btn-sm request-btn";
+            requestBtnElement.textContent = "Request";
+
+            listElement.appendChild(requestBtnElement);
             userList.append(listElement);
         }
     }

@@ -1,3 +1,5 @@
+package service;
+
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -9,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.HttpCookie;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -16,12 +19,25 @@ import java.util.stream.Collectors;
 public class WaitingRoomService {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomService.class);
 
-    public static final String USER_BROADCAST_TYPE = "USER_TYPE";
-    public static final String SYSTEM_BROADCAST_TYPE = "SYSTEM_TYPE";
+    private static final String USER_BROADCAST_TYPE = "USER_TYPE";
+    private static final String SYSTEM_BROADCAST_TYPE = "SYSTEM_TYPE";
     private static final long TIMEOUT = 900000;
     private static final String SESSION_ID = "JSESSIONID";
     private static final String USERNAME = "username";
     private static final String CHAT_COLOR = "chatColor";
+
+    private final Map<String, Session> waitingRoomUsersMap;
+    private final List<String> waitingRoomUsersList;
+    private final List<String> waitingRoomMessagesList; // TODO: Persist these messages into a table
+
+
+    public WaitingRoomService(Map<String, Session> waitingRoomUsersMap,
+                              List<String> waitingRoomUsersList,
+                              List<String> waitingRoomMessagesList) {
+        this.waitingRoomUsersMap = waitingRoomUsersMap;
+        this.waitingRoomUsersList = waitingRoomUsersList;
+        this.waitingRoomMessagesList = waitingRoomMessagesList;
+    }
 
     /**
      * Broadcasts a message to all websocket sessions
@@ -30,13 +46,13 @@ public class WaitingRoomService {
      * @param message
      * @param type
      */
-    private static void broadcastMessage(String sender, String message, String type, String chatColor) {
+    private void broadcastMessage(String sender, String message, String type, String chatColor) {
         String fullMessage = type.equals(WaitingRoomService.SYSTEM_BROADCAST_TYPE) ?
                 message : String.format("[%s] %s: %s", getTimestamp(), sender, message);
 
-        Application.waitingRoomMessagesList.add(fullMessage);
+        waitingRoomMessagesList.add(fullMessage);
 
-        Application.waitingRoomUsersMap.values().stream()
+        waitingRoomUsersMap.values().stream()
                 .filter(Session::isOpen)
                 .forEach(session -> {
                     try {
@@ -44,7 +60,7 @@ public class WaitingRoomService {
                         json.put("message", fullMessage);
                         json.put("type", type);
                         json.put("color", chatColor);
-                        json.put("users", Application.waitingRoomUsersList);
+                        json.put("users", waitingRoomUsersList);
 
                         session.getRemote().sendString(String.valueOf(json));
                     } catch (Exception e) {
@@ -58,7 +74,7 @@ public class WaitingRoomService {
      *
      * @return
      */
-    private static String getTimestamp() {
+    private String getTimestamp() {
         String timestamp = new Timestamp(System.currentTimeMillis()).toString();
         timestamp = timestamp.substring(0, timestamp.indexOf("."));
         return timestamp;
@@ -79,11 +95,11 @@ public class WaitingRoomService {
         System.out.println(sessionCookies);
 
         // Check if session has connected to waiting room before
-        if (!Application.waitingRoomUsersMap.containsKey(sessionId)) {
+        if (!waitingRoomUsersMap.containsKey(sessionId)) {
             String message = String.format("(%s joined the chat)", username);
 
-            Application.waitingRoomUsersList.add(username);
-            Application.waitingRoomUsersMap.put(sessionId, session);
+            waitingRoomUsersList.add(username);
+            waitingRoomUsersMap.put(sessionId, session);
             broadcastMessage("", message, SYSTEM_BROADCAST_TYPE, chatColor);
         }
     }
@@ -99,8 +115,8 @@ public class WaitingRoomService {
 
         String message = String.format("(%s left the chat)", username);
 
-        Application.waitingRoomUsersList.remove(username);
-        Application.waitingRoomUsersMap.remove(sessionId);
+        waitingRoomUsersList.remove(username);
+        waitingRoomUsersMap.remove(sessionId);
         broadcastMessage("", message, SYSTEM_BROADCAST_TYPE, chatColor);
     }
 

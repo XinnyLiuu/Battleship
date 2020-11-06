@@ -1,7 +1,7 @@
-import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.UserService;
+import service.WaitingRoomService;
 import service.session.SessionManager;
 import service.session.SessionVariables;
 import spark.ModelAndView;
@@ -10,7 +10,6 @@ import spark.template.handlebars.HandlebarsTemplateEngine;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,17 +18,18 @@ import static spark.Spark.*;
 public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
-    static Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
-    static List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
-    static List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
-
     public static void main(String[] args) {
         staticFiles.location("/public");
 
         /*
          * Websockets
          */
-        webSocket("/waiting-room", WaitingRoomService.class);
+        webSocket("/waiting-room",
+                new WaitingRoomService(
+                        new ConcurrentHashMap<>(),
+                        Collections.synchronizedList(new ArrayList<>()),
+                        Collections.synchronizedList(new ArrayList<>())
+                ));
 
         /*
          * UI Routes
