@@ -54,23 +54,52 @@
     const userList = document.querySelector("#user-list");
     const userCount = document.querySelector("#user-count");
 
+    // Prompt user if they wish to play with sender
+    function processInvitationRequest(sender, message) {
+        const hasAccepted = confirm(message);
+
+        if (hasAccepted) {
+            // TODO: Let sender know
+            alert("Accepted invitation!");
+        } else {
+            // TODO: Let sender know
+            alert("Declined invitation!");
+        }
+    }
+
     // Send a message, clear input
-    function sendMessage(ws, message) {
+    function sendMessage(ws, message, isChat) {
+        let data = {};
+
         if (message) {
-            ws.send(message);
+            if (isChat) {
+                data.type = "CHAT";
+                data.message = message;
+            } else {
+                data.type = "REQUEST";
+                data.message = message;
+            }
+
+            ws.send(JSON.stringify(data));
             messageInput.value = "";
         }
     }
 
     // Updates the chat all existing messages
-    function updateChat(message) {
+    function updateChat(ws, message) {
         const data = JSON.parse(message.data);
+
+        // Check if the message received is an invitation request, prompt user to accept
+        if (data.type === "REQUEST") {
+            processInvitationRequest(data.sender, data.message);
+            return;
+        }
 
         // Append message to chat ui
         const messageElement = document.createElement("p");
         messageElement.innerHTML = data.message;
 
-        if (data.type === "SYSTEM_TYPE") {
+        if (data.type === "SYSTEM") {
             messageElement.style.color = "#343a40";
             messageElement.style.fontWeight = "bold";
         } else {
@@ -81,11 +110,8 @@
         chat.scrollTop = chat.scrollHeight;
 
         // Append current users to user list ui
-        if (!data.users.length) {
-            userList.innerHTML = "There's no one available right now :(";
-        }
-
         userList.innerHTML = "";
+        data.users = data.users.filter(user => user != getCookie("username"));
         userCount.innerHTML = data.users.length;
 
         for (const user of data.users) {
@@ -97,6 +123,12 @@
             requestBtnElement.type = "button";
             requestBtnElement.className = "btn btn-outline-primary btn-sm request-btn";
             requestBtnElement.textContent = "Request";
+            requestBtnElement.dataset.targetUser = user;
+            requestBtnElement.addEventListener("click", (e) => {
+                // Send a message to server, requesting a new room for the matched players
+                let targetUser = e.target.dataset.targetUser;
+                sendMessage(ws, targetUser, false);
+            });
 
             listElement.appendChild(requestBtnElement);
             userList.append(listElement);
@@ -105,7 +137,7 @@
 
     // Create websocket connection
     const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/waiting-room`);
-    websocket.onmessage = (msg) => updateChat(msg);
+    websocket.onmessage = (msg) => updateChat(websocket, msg);
     websocket.onclose = () => {
         alert("Websocket closed!");
         window.location.replace("/");
@@ -117,12 +149,12 @@
 
     // Event listeners
     sendBtn.addEventListener("click", () => {
-        sendMessage(websocket, messageInput.value)
+        sendMessage(websocket, messageInput.value, true);
     });
 
     messageInput.addEventListener("keypress", (e) => {
         if (e.keyCode === 13) {
-            sendMessage(websocket, messageInput.value);
+            sendMessage(websocket, messageInput.value, true);
         }
     });
 

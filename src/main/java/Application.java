@@ -8,10 +8,7 @@ import spark.ModelAndView;
 import spark.Request;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static spark.Spark.*;
 
@@ -24,12 +21,7 @@ public class Application {
         /*
          * Websockets
          */
-        webSocket("/waiting-room",
-                new WaitingRoomService(
-                        new ConcurrentHashMap<>(),
-                        Collections.synchronizedList(new ArrayList<>()),
-                        Collections.synchronizedList(new ArrayList<>())
-                ));
+        webSocket("/waiting-room", WaitingRoomService.class);
 
         /*
          * UI Routes
