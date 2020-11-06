@@ -48,49 +48,70 @@
 
 
 <script>
+    const MESSAGE_TYPE_CHAT = "CHAT";
+    const MESSAGE_TYPE_REQUEST = "REQUEST";
+    const MESSAGE_TYPE_SYSTEM = "SYSTEM";
+    const MESSAGE_TYPE_ACCEPT = "ACCEPT";
+    const MESSAGE_TYPE_DECLINE = "DECLINE";
+
     const sendBtn = document.querySelector("#send");
     const messageInput = document.querySelector("#message");
     const chat = document.querySelector("#chat");
     const userList = document.querySelector("#user-list");
     const userCount = document.querySelector("#user-count");
 
+    // Create websocket connection
+    const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/waiting-room`);
+    websocket.onmessage = (msg) => updateChat(msg);
+    websocket.onclose = () => {
+        alert("Websocket closed!");
+        window.location.replace("/");
+    }
+    websocket.onerror = (e) => {
+        alert("Websocket error!");
+        console.error(e);
+    }
+
     // Prompt user if they wish to play with sender
     function processInvitationRequest(sender, message) {
         const hasAccepted = confirm(message);
 
         if (hasAccepted) {
-            // TODO: Let sender know
             alert("Accepted invitation!");
+
+            websocket.send(JSON.stringify({
+                type: MESSAGE_TYPE_ACCEPT,
+                message: sender
+            }));
         } else {
-            // TODO: Let sender know
             alert("Declined invitation!");
+
+            websocket.send(JSON.stringify({
+                type: MESSAGE_TYPE_DECLINE,
+                message: sender
+            }));
         }
     }
 
     // Send a message, clear input
-    function sendMessage(ws, message, isChat) {
+    function sendMessage(message, type) {
         let data = {};
 
         if (message) {
-            if (isChat) {
-                data.type = "CHAT";
-                data.message = message;
-            } else {
-                data.type = "REQUEST";
-                data.message = message;
-            }
+            data.type = type;
+            data.message = message;
 
-            ws.send(JSON.stringify(data));
+            websocket.send(JSON.stringify(data));
             messageInput.value = "";
         }
     }
 
     // Updates the chat all existing messages
-    function updateChat(ws, message) {
+    function updateChat(message) {
         const data = JSON.parse(message.data);
 
         // Check if the message received is an invitation request, prompt user to accept
-        if (data.type === "REQUEST") {
+        if (data.type === MESSAGE_TYPE_REQUEST) {
             processInvitationRequest(data.sender, data.message);
             return;
         }
@@ -99,7 +120,7 @@
         const messageElement = document.createElement("p");
         messageElement.innerHTML = data.message;
 
-        if (data.type === "SYSTEM") {
+        if (data.type === MESSAGE_TYPE_SYSTEM) {
             messageElement.style.color = "#343a40";
             messageElement.style.fontWeight = "bold";
         } else {
@@ -125,9 +146,8 @@
             requestBtnElement.textContent = "Request";
             requestBtnElement.dataset.targetUser = user;
             requestBtnElement.addEventListener("click", (e) => {
-                // Send a message to server, requesting a new room for the matched players
                 let targetUser = e.target.dataset.targetUser;
-                sendMessage(ws, targetUser, false);
+                sendMessage(targetUser, MESSAGE_TYPE_REQUEST);
             });
 
             listElement.appendChild(requestBtnElement);
@@ -135,27 +155,14 @@
         }
     }
 
-    // Create websocket connection
-    const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/waiting-room`);
-    websocket.onmessage = (msg) => updateChat(websocket, msg);
-    websocket.onclose = () => {
-        alert("Websocket closed!");
-        window.location.replace("/");
-    }
-    websocket.onerror = (e) => {
-        alert("Websocket error!");
-        console.error(e);
-    }
-
     // Event listeners
     sendBtn.addEventListener("click", () => {
-        sendMessage(websocket, messageInput.value, true);
+        sendMessage(messageInput.value, MESSAGE_TYPE_CHAT);
     });
 
     messageInput.addEventListener("keypress", (e) => {
         if (e.keyCode === 13) {
-            sendMessage(websocket, messageInput.value, true);
+            sendMessage(messageInput.value, MESSAGE_TYPE_CHAT);
         }
     });
-
 </script>

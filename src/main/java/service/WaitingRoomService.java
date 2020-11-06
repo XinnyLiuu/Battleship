@@ -24,6 +24,8 @@ public class WaitingRoomService {
 
     private static final String CLIENT_CHAT_TYPE = "CHAT";
     private static final String CLIENT_REQUEST_TYPE = "REQUEST";
+    private static final String CLIENT_ACCEPT_TYPE = "ACCEPT";
+    private static final String CLIENT_DECLINE_TYPE = "DECLINE";
 
     private static final long TIMEOUT = 900000;
     private static final String SESSION_ID = "JSESSIONID";
@@ -32,6 +34,7 @@ public class WaitingRoomService {
 
     private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
     private final Map<String, String> sessionIdToUsernameMap = new ConcurrentHashMap<>();
+    private final List<Session> pendingSenderRequests = Collections.synchronizedList(new ArrayList<>());
     private final List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
     private final List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
 
@@ -146,7 +149,6 @@ public class WaitingRoomService {
         Map<String, String> sessionCookies = session.getUpgradeRequest().getCookies().stream()
                 .collect(Collectors.toMap(HttpCookie::getName, HttpCookie::getValue));
 
-        String sessionId = sessionCookies.get(SESSION_ID);
         String username = sessionCookies.get(USERNAME);
         String chatColor = sessionCookies.get(CHAT_COLOR);
 
@@ -169,10 +171,10 @@ public class WaitingRoomService {
             onError(new UnexpectedException("Unexpected message"));
         }
 
+        LOGGER.info(json.toString());
+
         String type = json.get("type");
         String msg = json.get("message");
-
-        LOGGER.info(json.toString());
 
         if (type.equals(CLIENT_CHAT_TYPE)) {
             broadcastMessage(username, msg, BROADCAST_USER_TYPE, chatColor);
@@ -186,7 +188,12 @@ public class WaitingRoomService {
                     .map(Map.Entry::getKey)
                     .collect(Collectors.joining());
 
+            pendingSenderRequests.add(session);
             sendRequestMessage(username, targetSessionId);
+        } else if (type.equals(CLIENT_ACCEPT_TYPE)) {
+            // TODO: An accept message has been received, get the sender, query for their session, let the send know, remove from pending list, remove both from waiting room, create room for both
+        } else if (type.equals(CLIENT_DECLINE_TYPE)) {
+            // TODO: An decline message has been received, get the sender, query for their session, let the send know, remove from pending list
         }
     }
 
