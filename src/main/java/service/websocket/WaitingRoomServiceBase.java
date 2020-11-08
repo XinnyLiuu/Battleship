@@ -22,8 +22,8 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
     private static final String CLIENT_ACCEPT_TYPE = "ACCEPT";
     private static final String CLIENT_DECLINE_TYPE = "DECLINE";
 
+    private final AtomicInteger gameRoomCounter = new AtomicInteger();
     private final List<Session> pendingSenderRequests = Collections.synchronizedList(new ArrayList<>());
-    private static final AtomicInteger gameRoomCounter = new AtomicInteger();
 
     private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
     private final List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());

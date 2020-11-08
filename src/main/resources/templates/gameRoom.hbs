@@ -15,12 +15,15 @@
     websocket.onmessage = (msg) => updateChat(msg);
     websocket.onclose = (e) => {
         console.error(e);
-        alert("Websocket closed!");
-        window.location.replace("/");
+        document.querySelector("#alert-modal-accept")
+            .addEventListener("click", () => {
+                window.location.replace("/");
+            });
+        showAlertModal("Websocket closed!");
     }
     websocket.onerror = (e) => {
         console.error(e);
-        alert("Websocket error!");
+        showAlertModal("Websocket error!");
     }
 
     // Send a message, clear input
@@ -42,25 +45,23 @@
         console.log(data);
 
         if (data.type === MESSAGE_TYPE_END) {
-            // Delete game room id from cookie
-            alert(data.message);
-            deleteCookie(COOKIE_GAME_ROOM_ID);
-            window.location.replace("/");
+            document.querySelector("#redirect-modal-body").innerHTML = data.message;
+            document.querySelector("#redirect-modal-accept")
+                .addEventListener("click", () => {
+                    deleteCookie(COOKIE_GAME_ROOM_ID);
+                    window.location.replace("/");
+                });
+
+            $("#redirect-modal").modal({
+                backdrop: "static",
+                keyboard: false
+            });
+
             return;
         }
 
         // Append message to chat ui
-        const messageElement = document.createElement("p");
-        messageElement.innerHTML = data.message;
-
-        if (data.type === MESSAGE_TYPE_SYSTEM) {
-            messageElement.style.color = "#343a40";
-            messageElement.style.fontWeight = "bold";
-        } else {
-            messageElement.style.color = data.color;
-        }
-
-        chat.appendChild(messageElement);
+        chat.appendChild(createMessageElement(data));
         chat.scrollTop = chat.scrollHeight;
 
         // Append current users to user list ui
@@ -91,7 +92,6 @@
     window.addEventListener("beforeunload", (e) => {
         deleteCookie(COOKIE_GAME_ROOM_ID);
     });
-
 </script>
 
 {{>partials/footer.hbs}}
