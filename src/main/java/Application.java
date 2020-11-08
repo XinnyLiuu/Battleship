@@ -1,8 +1,8 @@
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import service.GameRoomServiceBase;
 import service.UserService;
-import service.WaitingRoomService;
-import service.session.GameRoomService;
+import service.WaitingRoomServiceBase;
 import service.session.SessionManager;
 import service.session.SessionVariables;
 import spark.ModelAndView;
@@ -22,8 +22,8 @@ public class Application {
         /*
          * Websockets
          */
-        webSocket("/waiting-room", WaitingRoomService.class);
-        webSocket("/game-room", GameRoomService.class);
+        webSocket("/waiting-room", WaitingRoomServiceBase.class);
+        webSocket("/game-room", GameRoomServiceBase.class);
 
         /*
          * UI Routes

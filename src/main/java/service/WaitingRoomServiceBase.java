@@ -16,27 +16,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @WebSocket
-public class WaitingRoomService extends WebSocketService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomService.class);
-
-    private static final String BROADCAST_USER_TYPE = "USER";
-    private static final String BROADCAST_SYSTEM_TYPE = "SYSTEM";
+public class WaitingRoomServiceBase extends BaseWebSocketService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomServiceBase.class);
 
     private static final String CLIENT_CHAT_TYPE = "CHAT";
     private static final String CLIENT_CHALLENGE_TYPE = "CHALLENGE";
     private static final String CLIENT_ACCEPT_TYPE = "ACCEPT";
     private static final String CLIENT_DECLINE_TYPE = "DECLINE";
 
-    private static final long TIMEOUT = 900000;
-    private static final String SESSION_ID = "JSESSIONID";
-    private static final String USERNAME = "username";
-    private static final String CHAT_COLOR = "chatColor";
-
     private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
     private final Map<String, String> sessionIdUsernameMap = new ConcurrentHashMap<>();
     private final List<Session> pendingSenderRequests = Collections.synchronizedList(new ArrayList<>());
     private final List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
     private final List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
+
+    public WaitingRoomServiceBase() {
+        super(LOGGER);
+    }
 
     /**
      * Broadcasts a message to all websocket sessions
@@ -46,7 +42,7 @@ public class WaitingRoomService extends WebSocketService {
      * @param type
      */
     private void broadcastMessage(String sender, String message, String type, String chatColor) {
-        String fullMessage = type.equals(WaitingRoomService.BROADCAST_SYSTEM_TYPE) ?
+        String fullMessage = type.equals(WaitingRoomServiceBase.BROADCAST_SYSTEM_TYPE) ?
                 message : String.format("[%s] %s: %s", getTimestamp(), sender, message);
 
         waitingRoomMessagesList.add(fullMessage);
@@ -256,31 +252,5 @@ public class WaitingRoomService extends WebSocketService {
                 .filter(entry -> entry.getValue().equals(username))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.joining());
-    }
-
-    /**
-     * Check that the session is still opened, otherwise have the websocket return an error to the client
-     *
-     * @param session
-     */
-    private void checkSessionOpened(Session session) {
-        if (!session.isOpen()) {
-            onError(new UnexpectedException("The request player is not longer present"));
-        }
-    }
-
-    /**
-     * Sends JSON back to the user
-     *
-     * @param session
-     * @param json
-     */
-    private void sendJsonToSession(Session session, JSONObject json) {
-        try {
-            session.getRemote().sendString(String.valueOf(json));
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            onError(e);
-        }
     }
 }
