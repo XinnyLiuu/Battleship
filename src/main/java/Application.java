@@ -2,6 +2,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.UserService;
 import service.WaitingRoomService;
+import service.session.GameRoomService;
 import service.session.SessionManager;
 import service.session.SessionVariables;
 import spark.ModelAndView;
@@ -22,6 +23,7 @@ public class Application {
          * Websockets
          */
         webSocket("/waiting-room", WaitingRoomService.class);
+        webSocket("/game-room", GameRoomService.class);
 
         /*
          * UI Routes
@@ -36,6 +38,9 @@ public class Application {
         before("/login", (req, res) -> {
             if (isAuthenticated(req)) res.redirect("/");
         });
+        before("/game", (req, res) -> {
+            if (!isAuthenticated(req)) res.redirect("/login");
+        });
 
         get("/", (req, res) -> render(Map.of(
                 SessionVariables.STARTED, SessionManager.getSessionVariable(req, SessionVariables.STARTED),
@@ -43,6 +48,10 @@ public class Application {
         ), "/index.hbs"));
         get("/register", (req, res) -> render(Map.of(), "/register.hbs"));
         get("/login", (req, res) -> render(Map.of(), "/login.hbs"));
+        get("/game", (req, res) -> render(Map.of(
+                SessionVariables.STARTED, SessionManager.getSessionVariable(req, SessionVariables.STARTED),
+                SessionVariables.USERNAME, SessionManager.getSessionVariable(req, SessionVariables.USERNAME)
+        ), "/gameRoom.hbs"));
 
         /*
          * API Routes

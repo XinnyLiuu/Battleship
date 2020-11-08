@@ -1,3 +1,4 @@
+/** The following are cookie getters / setters **/
 function setCookie(name, value, days) {
   let expires = "";
 
