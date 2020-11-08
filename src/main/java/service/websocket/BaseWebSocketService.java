@@ -24,6 +24,8 @@ public abstract class BaseWebSocketService {
     public static final String JSON_MESSAGE_USERS = "users";
     public static final String JSON_MESSAGE_GAME_ROOM_ID = "gameRoomId";
 
+    public static final String CLIENT_CHAT_TYPE = "CHAT";
+
     public static final long SESSION_TIMEOUT = 3600000; // Session timeout 1 hr
     public static final String SESSION_ID = "JSESSIONID";
     public static final String SESSION_USERNAME = "username";

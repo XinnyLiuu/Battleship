@@ -11,22 +11,23 @@ import java.io.IOException;
 import java.rmi.UnexpectedException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @WebSocket
 public class WaitingRoomServiceBase extends BaseWebSocketService {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaitingRoomServiceBase.class);
 
-    private static final String CLIENT_CHAT_TYPE = "CHAT";
     private static final String CLIENT_CHALLENGE_TYPE = "CHALLENGE";
     private static final String CLIENT_ACCEPT_TYPE = "ACCEPT";
     private static final String CLIENT_DECLINE_TYPE = "DECLINE";
 
     private final List<Session> pendingSenderRequests = Collections.synchronizedList(new ArrayList<>());
+    private static final AtomicInteger gameRoomCounter = new AtomicInteger();
 
     private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
     private final List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
-    private final List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table or actually return this to the client, right now it's not being used.
+    // TODO: Persist messages into a table ?
 
     public WaitingRoomServiceBase() {
         super(LOGGER);
@@ -100,8 +101,6 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
         String type = json.get(JSON_MESSAGE_TYPE);
         String msg = json.get(JSON_MESSAGE_TEXT);
 
-        LOGGER.info(String.valueOf(pendingSenderRequests.size()));
-
         switch (type) {
             case CLIENT_CHAT_TYPE:
                 broadcastMessage(username, msg, BROADCAST_USER_TYPE, chatColor);
@@ -130,10 +129,9 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
      * @param type
      */
     private void broadcastMessage(String sender, String message, String type, String chatColor) {
-        String fullMessage = type.equals(WaitingRoomServiceBase.BROADCAST_SYSTEM_TYPE) ?
+        String fullMessage = type.equals(BROADCAST_SYSTEM_TYPE) ?
                 message : String.format("[%s] %s: %s", getTimestamp(), sender, message);
 
-        waitingRoomMessagesList.add(fullMessage);
         waitingRoomUsersMap.values().stream()
                 .filter(Session::isOpen)
                 .forEach(session -> sendJsonToSession(session,
@@ -193,26 +191,22 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
             waitingRoomUsersMap.remove(getSessionIdByUsername(sender));
             sessionIdUsernameMap.remove(getSessionIdByUsername(sender));
 
-            LOGGER.info("After removal user list:" + waitingRoomUsersList.size());
-            LOGGER.info("After removal user map:" + waitingRoomUsersMap.size());
-            LOGGER.info("After removal session id user map:" + sessionIdUsernameMap.size());
+            LOGGER.info("After removal user list: " + waitingRoomUsersList.size());
+            LOGGER.info("After removal user map: " + waitingRoomUsersMap.size());
+            LOGGER.info("After removal session id user map: " + sessionIdUsernameMap.size());
 
             sendJsonToSession(senderSession,
                     new JSONObject()
                             .put(JSON_MESSAGE_TYPE, CLIENT_ACCEPT_TYPE)
                             .put(JSON_MESSAGE_TEXT, "Redirecting to game room now...")
-                            .put(JSON_MESSAGE_GAME_ROOM_ID, GameRoomServiceBase.gameRoomCounter.incrementAndGet()));
+                            .put(JSON_MESSAGE_GAME_ROOM_ID, gameRoomCounter.incrementAndGet()));
 
-            // Prepare the game room
-            GameRoomServiceBase.gameRoomUsersMap.put(GameRoomServiceBase.gameRoomCounter.get(), Map.of());
-            GameRoomServiceBase.gameRoomUsernamesMap.put(GameRoomServiceBase.gameRoomCounter.get(), List.of());
-            GameRoomServiceBase.gameRoomMessagesMap.put(GameRoomServiceBase.gameRoomCounter.get(),
-                    List.of(String.format("Game Room Id: %s", GameRoomServiceBase.gameRoomCounter.get())));
+            GameRoomServiceBase.prepareGameRoom(gameRoomCounter.get());
         } else {
             pendingSenderRequests.remove(targetSession);
         }
 
-        LOGGER.info("After removal pending list:" + pendingSenderRequests.size());
+        LOGGER.info("After removal pending list: " + pendingSenderRequests.size());
 
         JSONObject json = new JSONObject()
                 .put(JSON_MESSAGE_TYPE, accepted ? CLIENT_ACCEPT_TYPE : CLIENT_DECLINE_TYPE)
@@ -220,7 +214,7 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
                 .put(JSON_MESSAGE_SENDER, sender);
 
         if (accepted) {
-            json.put(JSON_MESSAGE_GAME_ROOM_ID, GameRoomServiceBase.gameRoomCounter.get());
+            json.put(JSON_MESSAGE_GAME_ROOM_ID, gameRoomCounter.get());
         }
 
         sendJsonToSession(targetSession, json);

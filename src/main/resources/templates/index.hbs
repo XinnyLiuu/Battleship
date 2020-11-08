@@ -15,7 +15,6 @@
     websocket.onmessage = (msg) => updateChat(msg);
     websocket.onclose = () => {
         alert("Websocket closed!");
-        window.location.replace("/");
     }
     websocket.onerror = (e) => {
         console.error(e);
@@ -69,7 +68,7 @@
 
         if (data.type === MESSAGE_TYPE_ACCEPT) {
             alert(data.message);
-            setCookie("gameRoomId", data.gameRoomId);
+            setCookie(COOKIE_GAME_ROOM_ID, data.gameRoomId, 365);
             window.location.replace("/game");
             return;
         }
@@ -95,7 +94,7 @@
 
         // Append current users to user list ui
         userList.innerHTML = "";
-        data.users = data.users.filter(user => user != getCookie("username"));
+        data.users = data.users.filter(user => user != getCookie(COOKIE_USERNAME));
         userCount.innerHTML = data.users.length;
 
         for (const user of data.users) {
