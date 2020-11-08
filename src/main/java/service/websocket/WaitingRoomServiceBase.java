@@ -1,4 +1,4 @@
-package service;
+package service.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.websocket.api.Session;
@@ -105,9 +105,9 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
             waitingRoomUsersMap.remove(getSessionIdByUsername(sender));
             sessionIdUsernameMap.remove(getSessionIdByUsername(sender));
 
-            LOGGER.info("After removal user list " + waitingRoomUsersList.size());
-            LOGGER.info("After removal user map " + waitingRoomUsersMap.size());
-            LOGGER.info("After removal session id user map " + sessionIdUsernameMap.size());
+            LOGGER.info("After removal user list:" + waitingRoomUsersList.size());
+            LOGGER.info("After removal user map:" + waitingRoomUsersMap.size());
+            LOGGER.info("After removal session id user map:" + sessionIdUsernameMap.size());
 
             sendJsonToSession(senderSession,
                     new JSONObject()

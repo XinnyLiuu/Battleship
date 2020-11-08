@@ -1,8 +1,8 @@
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import service.GameRoomServiceBase;
-import service.UserService;
-import service.WaitingRoomServiceBase;
+import service.websocket.GameRoomServiceBase;
+import service.api.UserService;
+import service.websocket.WaitingRoomServiceBase;
 import service.session.SessionManager;
 import service.session.SessionVariables;
 import spark.ModelAndView;

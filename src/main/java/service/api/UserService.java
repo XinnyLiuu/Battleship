@@ -1,4 +1,4 @@
-package service;
+package service.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import data.dao.UserDao;
