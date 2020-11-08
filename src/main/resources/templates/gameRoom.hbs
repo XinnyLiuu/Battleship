@@ -2,10 +2,8 @@
 {{>partials/waitingRoom.hbs}}
 
 <script src="/js/utils.js"></script>
+<script src="/js/constants.js"></script>
 <script>
-    const MESSAGE_TYPE_CHAT = "CHAT";
-    const MESSAGE_TYPE_SYSTEM = "SYSTEM";
-
     const sendBtn = document.querySelector("#send");
     const messageInput = document.querySelector("#message");
     const chat = document.querySelector("#chat");
@@ -13,15 +11,16 @@
     const userCount = document.querySelector("#user-count");
 
     // Create websocket connection
-    const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/game-room`);
+    const websocket = new WebSocket(GAME_ROOM_WEBSOCKET_URL);
     websocket.onmessage = (msg) => updateChat(msg);
-    websocket.onclose = () => {
+    websocket.onclose = (e) => {
+        console.error(e);
         alert("Websocket closed!");
         window.location.replace("/");
     }
     websocket.onerror = (e) => {
-        alert("Websocket error!");
         console.error(e);
+        alert("Websocket error!");
     }
 
     // Send a message, clear input

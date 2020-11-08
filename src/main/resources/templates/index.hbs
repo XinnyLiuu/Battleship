@@ -2,13 +2,8 @@
 {{>partials/waitingRoom.hbs}}
 
 <script src="/js/utils.js"></script>
+<script src="/js/constants.js"></script>
 <script>
-    const MESSAGE_TYPE_CHAT = "CHAT";
-    const MESSAGE_TYPE_SYSTEM = "SYSTEM";
-    const MESSAGE_TYPE_CHALLENGE = "CHALLENGE";
-    const MESSAGE_TYPE_ACCEPT = "ACCEPT";
-    const MESSAGE_TYPE_DECLINE = "DECLINE";
-
     const sendBtn = document.querySelector("#send");
     const messageInput = document.querySelector("#message");
     const chat = document.querySelector("#chat");
@@ -16,15 +11,15 @@
     const userCount = document.querySelector("#user-count");
 
     // Create websocket connection
-    const websocket = new WebSocket(`ws://${location.hostname}:${location.port}/waiting-room`);
+    const websocket = new WebSocket(WAITING_ROOM_WEBSOCKET_URL);
     websocket.onmessage = (msg) => updateChat(msg);
     websocket.onclose = () => {
         alert("Websocket closed!");
         window.location.replace("/");
     }
     websocket.onerror = (e) => {
-        alert("Websocket error!");
         console.error(e);
+        alert("Websocket error!");
     }
 
     // Prompt user if they wish to play with sender
@@ -74,6 +69,7 @@
 
         if (data.type === MESSAGE_TYPE_ACCEPT) {
             alert(data.message);
+            setCookie("gameRoomId", data.gameRoomId);
             window.location.replace("/game");
             return;
         }

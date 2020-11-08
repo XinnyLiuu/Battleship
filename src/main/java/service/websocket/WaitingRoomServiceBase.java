@@ -8,9 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.rmi.UnexpectedException;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -24,14 +22,104 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
     private static final String CLIENT_ACCEPT_TYPE = "ACCEPT";
     private static final String CLIENT_DECLINE_TYPE = "DECLINE";
 
-    private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
-    private final Map<String, String> sessionIdUsernameMap = new ConcurrentHashMap<>();
     private final List<Session> pendingSenderRequests = Collections.synchronizedList(new ArrayList<>());
+
+    private final Map<String, Session> waitingRoomUsersMap = new ConcurrentHashMap<>();
     private final List<String> waitingRoomUsersList = Collections.synchronizedList(new ArrayList<>());
-    private final List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table
+    private final List<String> waitingRoomMessagesList = Collections.synchronizedList(new ArrayList<>()); // TODO: Persist these messages into a table or actually return this to the client, right now it's not being used.
 
     public WaitingRoomServiceBase() {
         super(LOGGER);
+    }
+
+    @Override
+    public void onConnect(Session session) {
+        session.setIdleTimeout(SESSION_TIMEOUT);
+
+        Map<String, String> sessionCookies = getSessionCookies(session);
+
+        String sessionId = sessionCookies.get(SESSION_ID);
+        String username = sessionCookies.get(SESSION_USERNAME);
+        String chatColor = sessionCookies.get(SESSION_CHAT_COLOR);
+
+        if (!waitingRoomUsersMap.containsKey(sessionId)) {
+            String message = String.format("(%s joined the chat)", username);
+
+            waitingRoomUsersList.add(username);
+            waitingRoomUsersMap.put(sessionId, session);
+            sessionIdUsernameMap.put(sessionId, username);
+            broadcastMessage("", message, BROADCAST_SYSTEM_TYPE, chatColor);
+        }
+    }
+
+    @Override
+    public void onClose(Session session, int statusCode, String reason) {
+        Map<String, String> sessionCookies = getSessionCookies(session);
+
+        String sessionId = sessionCookies.get(SESSION_ID);
+        String username = sessionCookies.get(SESSION_USERNAME);
+        String chatColor = sessionCookies.get(SESSION_CHAT_COLOR);
+
+        String message = String.format("(%s left the chat)", username);
+
+        waitingRoomUsersList.remove(username);
+        waitingRoomUsersMap.remove(sessionId);
+        sessionIdUsernameMap.remove(sessionId);
+        broadcastMessage("", message, BROADCAST_SYSTEM_TYPE, chatColor);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void onMessage(Session session, String message) {
+        Map<String, String> sessionCookies = getSessionCookies(session);
+
+        String username = sessionCookies.get(SESSION_USERNAME);
+        String chatColor = sessionCookies.get(SESSION_CHAT_COLOR);
+
+        // The request will send a serialized json
+        ObjectMapper mapper = new ObjectMapper();
+        Optional<Map<String, String>> maybeJson = Optional.empty();
+
+        try {
+            maybeJson = Optional.of(mapper.readValue(message, Map.class));
+        } catch (IOException ioe) {
+            onError(ioe);
+        }
+
+        if (maybeJson.isEmpty()) {
+            onError(new UnexpectedException("Error parsing received message"));
+        }
+
+        Map<String, String> json = maybeJson.get();
+        if (!json.keySet().containsAll(List.of(JSON_MESSAGE_TYPE, JSON_MESSAGE_TEXT))) {
+            onError(new UnexpectedException("Unexpected message"));
+        }
+
+        LOGGER.info(json.toString());
+
+        String type = json.get(JSON_MESSAGE_TYPE);
+        String msg = json.get(JSON_MESSAGE_TEXT);
+
+        LOGGER.info(String.valueOf(pendingSenderRequests.size()));
+
+        switch (type) {
+            case CLIENT_CHAT_TYPE:
+                broadcastMessage(username, msg, BROADCAST_USER_TYPE, chatColor);
+                break;
+            case CLIENT_CHALLENGE_TYPE:
+                checkSessionExistsForUsername(msg);
+                pendingSenderRequests.add(session);
+                sendChallengeInviteMessage(username, getSessionIdByUsername(msg));
+                break;
+            case CLIENT_ACCEPT_TYPE:
+                checkSessionExistsForUsername(msg);
+                sendChallengeResponseMessage(username, getSessionIdByUsername(msg), true);
+                break;
+            case CLIENT_DECLINE_TYPE:
+                checkSessionExistsForUsername(msg);
+                sendChallengeResponseMessage(username, getSessionIdByUsername(msg), false);
+                break;
+        }
     }
 
     /**
@@ -50,10 +138,10 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
                 .filter(Session::isOpen)
                 .forEach(session -> sendJsonToSession(session,
                         new JSONObject()
-                                .put("type", type)
-                                .put("message", fullMessage)
-                                .put("color", chatColor)
-                                .put("users", waitingRoomUsersList)));
+                                .put(JSON_MESSAGE_TYPE, type)
+                                .put(JSON_MESSAGE_TEXT, fullMessage)
+                                .put(JSON_MESSAGE_COLOR, chatColor)
+                                .put(JSON_MESSAGE_USERS, waitingRoomUsersList)));
     }
 
     /**
@@ -70,9 +158,9 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
 
         sendJsonToSession(targetSession,
                 new JSONObject()
-                        .put("type", CLIENT_CHALLENGE_TYPE)
-                        .put("message", message)
-                        .put("sender", sender));
+                        .put(JSON_MESSAGE_TYPE, CLIENT_CHALLENGE_TYPE)
+                        .put(JSON_MESSAGE_TEXT, message)
+                        .put(JSON_MESSAGE_SENDER, sender));
     }
 
     /**
@@ -111,123 +199,31 @@ public class WaitingRoomServiceBase extends BaseWebSocketService {
 
             sendJsonToSession(senderSession,
                     new JSONObject()
-                            .put("type", CLIENT_ACCEPT_TYPE)
-                            .put("message", "Redirecting to game room now..."));
+                            .put(JSON_MESSAGE_TYPE, CLIENT_ACCEPT_TYPE)
+                            .put(JSON_MESSAGE_TEXT, "Redirecting to game room now...")
+                            .put(JSON_MESSAGE_GAME_ROOM_ID, GameRoomServiceBase.gameRoomCounter.incrementAndGet()));
+
+            // Prepare the game room
+            GameRoomServiceBase.gameRoomUsersMap.put(GameRoomServiceBase.gameRoomCounter.get(), Map.of());
+            GameRoomServiceBase.gameRoomUsernamesMap.put(GameRoomServiceBase.gameRoomCounter.get(), List.of());
+            GameRoomServiceBase.gameRoomMessagesMap.put(GameRoomServiceBase.gameRoomCounter.get(),
+                    List.of(String.format("Game Room Id: %s", GameRoomServiceBase.gameRoomCounter.get())));
         } else {
             pendingSenderRequests.remove(targetSession);
         }
 
         LOGGER.info("After removal pending list:" + pendingSenderRequests.size());
 
-        sendJsonToSession(targetSession,
-                new JSONObject()
-                        .put("type", accepted ? CLIENT_ACCEPT_TYPE : CLIENT_DECLINE_TYPE)
-                        .put("message", message)
-                        .put("sender", sender));
-    }
+        JSONObject json = new JSONObject()
+                .put(JSON_MESSAGE_TYPE, accepted ? CLIENT_ACCEPT_TYPE : CLIENT_DECLINE_TYPE)
+                .put(JSON_MESSAGE_TEXT, message)
+                .put(JSON_MESSAGE_SENDER, sender);
 
-    /**
-     * Returns the timestamp in 2016-11-16 06:43:19 format
-     *
-     * @return
-     */
-    private String getTimestamp() {
-        String timestamp = new Timestamp(System.currentTimeMillis()).toString();
-        timestamp = timestamp.substring(0, timestamp.indexOf("."));
-        return timestamp;
-    }
-
-    @Override
-    public void onConnect(Session session) {
-        session.setIdleTimeout(TIMEOUT);
-
-        Map<String, String> sessionCookies = session.getUpgradeRequest().getCookies().stream()
-                .collect(Collectors.toMap(HttpCookie::getName, HttpCookie::getValue));
-
-        String sessionId = sessionCookies.get(SESSION_ID);
-        String username = sessionCookies.get(USERNAME);
-        String chatColor = sessionCookies.get(CHAT_COLOR);
-
-        if (!waitingRoomUsersMap.containsKey(sessionId)) {
-            String message = String.format("(%s joined the chat)", username);
-
-            waitingRoomUsersList.add(username);
-            waitingRoomUsersMap.put(sessionId, session);
-            sessionIdUsernameMap.put(sessionId, username);
-            broadcastMessage("", message, BROADCAST_SYSTEM_TYPE, chatColor);
-        }
-    }
-
-    @Override
-    public void onClose(Session session, int statusCode, String reason) {
-        Map<String, String> sessionCookies = session.getUpgradeRequest().getCookies().stream()
-                .collect(Collectors.toMap(HttpCookie::getName, HttpCookie::getValue));
-
-        String sessionId = sessionCookies.get(SESSION_ID);
-        String username = sessionCookies.get(USERNAME);
-        String chatColor = sessionCookies.get(CHAT_COLOR);
-
-        String message = String.format("(%s left the chat)", username);
-
-        waitingRoomUsersList.remove(username);
-        waitingRoomUsersMap.remove(sessionId);
-        sessionIdUsernameMap.remove(sessionId);
-        broadcastMessage("", message, BROADCAST_SYSTEM_TYPE, chatColor);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void onMessage(Session session, String message) {
-        Map<String, String> sessionCookies = session.getUpgradeRequest().getCookies().stream()
-                .collect(Collectors.toMap(HttpCookie::getName, HttpCookie::getValue));
-
-        String username = sessionCookies.get(USERNAME);
-        String chatColor = sessionCookies.get(CHAT_COLOR);
-
-        // The request will send a serialized json
-        ObjectMapper mapper = new ObjectMapper();
-        Optional<Map<String, String>> maybeJson = Optional.empty();
-
-        try {
-            maybeJson = Optional.of(mapper.readValue(message, Map.class));
-        } catch (IOException ioe) {
-            onError(ioe);
+        if (accepted) {
+            json.put(JSON_MESSAGE_GAME_ROOM_ID, GameRoomServiceBase.gameRoomCounter.get());
         }
 
-        if (maybeJson.isEmpty()) {
-            onError(new UnexpectedException("Error parsing received message"));
-        }
-
-        Map<String, String> json = maybeJson.get();
-        if (!json.keySet().containsAll(List.of("type", "message"))) {
-            onError(new UnexpectedException("Unexpected message"));
-        }
-
-        LOGGER.info(json.toString());
-
-        String type = json.get("type");
-        String msg = json.get("message");
-
-        LOGGER.info(String.valueOf(pendingSenderRequests.size()));
-
-        switch (type) {
-            case CLIENT_CHAT_TYPE:
-                broadcastMessage(username, msg, BROADCAST_USER_TYPE, chatColor);
-                break;
-            case CLIENT_CHALLENGE_TYPE:
-                checkSessionExistsForUsername(msg);
-                pendingSenderRequests.add(session);
-                sendChallengeInviteMessage(username, getSessionIdByUsername(msg));
-                break;
-            case CLIENT_ACCEPT_TYPE:
-                checkSessionExistsForUsername(msg);
-                sendChallengeResponseMessage(username, getSessionIdByUsername(msg), true);
-                break;
-            case CLIENT_DECLINE_TYPE:
-                checkSessionExistsForUsername(msg);
-                sendChallengeResponseMessage(username, getSessionIdByUsername(msg), false);
-                break;
-        }
+        sendJsonToSession(targetSession, json);
     }
 
     /**
