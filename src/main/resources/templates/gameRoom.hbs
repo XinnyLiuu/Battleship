@@ -9,6 +9,7 @@
     const chat = document.querySelector("#chat");
     const userList = document.querySelector("#user-list");
     const userCount = document.querySelector("#user-count");
+    const leaveBtn = document.querySelector("#leave-btn");
 
     // Create websocket connection
     const websocket = new WebSocket(GAME_ROOM_WEBSOCKET_URL);
@@ -91,6 +92,10 @@
 
     window.addEventListener("beforeunload", (e) => {
         deleteCookie(COOKIE_GAME_ROOM_ID);
+    });
+
+    leaveBtn.addEventListener("click", () => {
+        window.location.replace("/");
     });
 </script>
 

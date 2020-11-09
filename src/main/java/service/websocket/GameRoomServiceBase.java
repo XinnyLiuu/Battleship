@@ -73,7 +73,7 @@ public class GameRoomServiceBase extends BaseWebSocketService {
         String username = sessionCookies.get(SESSION_USERNAME);
         int gameRoomId = Integer.parseInt(sessionCookies.get(SESSION_GAME_ROOM_ID));
 
-        String message = String.format("(%s left the chat, closing game room due to lack of players)", username);
+        String message = String.format("%s left the chat, closing game room due to lack of players", username);
 
         gameRoomUsersMap.get(gameRoomId).remove(sessionId);
         gameRoomUsernamesMap.get(gameRoomId).remove(username);

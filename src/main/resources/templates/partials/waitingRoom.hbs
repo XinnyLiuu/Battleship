@@ -27,6 +27,12 @@
 </style>
 
 <div class="container-fluid">
+    {{#if isGameRoom}}
+    <div class="row p-4">
+        <button id="leave-btn" class="btn btn-outline-primary">Leave</button>
+    </div>
+    {{/if}}
+
     <div class="row p-4">
         <div id="waiting-chat" class="card col-md-9 p-4 bg-light">
             <div id="chat" class="overflow-auto"></div>
@@ -69,7 +75,8 @@
             <div id="invite-modal-body" class="modal-body"></div>
             <div class="modal-footer">
                 <button id="invite-modal-decline" type="button" class="btn btn-outline-primary"
-                    data-dismiss="modal">Decline</button>
+                    data-dismiss="modal">Decline
+                </button>
                 <button id="invite-modal-accept" type="button" class="btn btn-primary">Accept</button>
             </div>
         </div>
