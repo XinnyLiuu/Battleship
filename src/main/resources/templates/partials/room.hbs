@@ -3,6 +3,13 @@
         float: right;
     }
 
+    #svg-wrapper {
+        display: block;
+        margin: auto;
+        width: 100%;
+        height: 800px;
+    }
+
     #waiting-chat {
         height: 500px;
         width: auto;
@@ -29,7 +36,9 @@
 <div class="container-fluid">
     {{#if isGameRoom}}
     <div class="row p-4">
-        <button id="leave-btn" class="btn btn-outline-primary">Leave</button>
+        <svg id="svg-wrapper" class="card bg-light">
+            <g id="board"></g>
+        </svg>
     </div>
     {{/if}}
 
@@ -45,11 +54,24 @@
             </div>
         </div>
 
+        {{#if isGameRoom}}
+        <div id="user-list-container" class="col-md-3 p-4 bg-light overflow-auto">
+            <h6>Players: <span id="user-count" class="badge badge-primary">0</span></h6>
+            <ul id="user-list" class="list-group"></ul>
+        </div>
+        {{else}}
         <div id="user-list-container" class="col-md-3 p-4 bg-light overflow-auto">
             <h6>Available Users: <span id="user-count" class="badge badge-primary">0</span></h6>
             <ul id="user-list" class="list-group"></ul>
         </div>
+        {{/if}}
     </div>
+
+    {{#if isGameRoom}}
+    <div class="row p-4">
+        <button id="leave-btn" class="btn btn-outline-primary">Leave</button>
+    </div>
+    {{/if}}
 </div>
 
 <div id="alert-modal" class="modal fade" tabindex="-1" role="dialog">

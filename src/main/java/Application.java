@@ -45,7 +45,7 @@ public class Application {
         get("/", (req, res) -> render(Map.of(
                 SessionVariables.STARTED, SessionManager.getSessionVariable(req, SessionVariables.STARTED),
                 SessionVariables.USERNAME, SessionManager.getSessionVariable(req, SessionVariables.USERNAME)
-        ), "/index.hbs"));
+        ), "/waitingRoom.hbs"));
         get("/register", (req, res) -> render(Map.of(), "/register.hbs"));
         get("/login", (req, res) -> render(Map.of(), "/login.hbs"));
         get("/game", (req, res) -> render(Map.of(

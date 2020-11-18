@@ -1,5 +1,5 @@
 {{>partials/header.hbs}}
-{{>partials/waitingRoom.hbs}}
+{{>partials/room.hbs}}
 
 <script src="/js/utils.js"></script>
 <script src="/js/constants.js"></script>
@@ -79,6 +79,44 @@
         }
     }
 
+    // Prepares the game board board
+    function drawBoard() {
+        let board = "",
+            x,
+            y,
+            cx,
+            cy;
+
+        // Draw the cells
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < 10; j++) {
+                x = 75 * i + 50;
+                y = 75 * j + 20;
+
+                board += `<rect x="${x}" 
+                            y="${y}" 
+                            width="75" 
+                            height="75" 
+                            stroke-width="5" 
+                            stroke="#d2eeff" 
+                            id="cell_${i}${j}" 
+                            fill="#0077be" />`;
+            }
+        }
+
+        /*
+         * Ships:
+         *   Carrier     (5)
+         *   Battleship  (4)
+         *   Destroyer   (3)
+         *   Submarine   (3)
+         *   Patrol Boat (2)
+         */
+
+
+        document.querySelector("#board").innerHTML = board;
+    }
+
     // Event listeners
     sendBtn.addEventListener("click", () => {
         sendMessage(messageInput.value, MESSAGE_TYPE_CHAT);
@@ -90,12 +128,16 @@
         }
     });
 
+    leaveBtn.addEventListener("click", () => {
+        window.location.replace("/");
+    });
+
     window.addEventListener("beforeunload", (e) => {
         deleteCookie(COOKIE_GAME_ROOM_ID);
     });
 
-    leaveBtn.addEventListener("click", () => {
-        window.location.replace("/");
+    window.addEventListener("load", (e) => {
+        drawBoard();
     });
 </script>
 
