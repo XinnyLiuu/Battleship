@@ -11,6 +11,7 @@
     const userList = document.querySelector("#user-list");
     const userCount = document.querySelector("#user-count");
     const leaveBtn = document.querySelector("#leave-btn");
+    const rotateBtn = document.querySelector("#rotate-btn");
 
     // Create websocket connection
     const websocket = new WebSocket(GAME_ROOM_WEBSOCKET_URL);
@@ -95,11 +96,18 @@
         window.location.replace("/");
     });
 
-    window.addEventListener("beforeunload", (e) => {
+    rotateBtn.addEventListener("click", () => {
+        localStorage.setItem("shipsDirection",
+            localStorage.getItem("shipsDirection") === "default" ? "rotated" : "default");
+
+        rotateShips();
+    });
+
+    window.addEventListener("beforeunload", () => {
         deleteCookie(COOKIE_GAME_ROOM_ID);
     });
 
-    window.addEventListener("load", (e) => {
+    window.addEventListener("load", () => {
         drawBoard();
     });
 </script>
