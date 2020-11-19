@@ -9,14 +9,14 @@ function drawBoard() {
   // Draw the cells
   for (let i = 0; i < 10; i++) {
     for (let j = 0; j < 10; j++) {
-      x = 75 * i + 50;
-      y = 75 * j + 20;
+      x = 50 * i + 50;
+      y = 50 * j + 20;
 
-      board += `<rect id="cell_${i}${j}" 
+      board += `<rect id="cell_${i}_${j}" 
                         x="${x}" 
                         y="${y}" 
-                        width="75" 
-                        height="75" 
+                        width="50" 
+                        height="50" 
                         stroke-width="5" 
                         stroke="#d2eeff" 
                         fill="#0077be" />`;
@@ -57,17 +57,17 @@ function drawShip(id, length, fillColor, direction, defaultX, defaultY) {
 
   for (let i = 0; i < length; i++) {
     if (direction === "default") {
-      x = 75 * i + 1200;
+      x = 50 * i + 900;
       y = defaultY;
     } else if (direction === "rotated") {
       x = defaultX;
-      y = 75 * i + 25;
+      y = 50 * i + 25;
     }
 
     ship += `<rect x="${x}" 
                     y="${y}"
-                    width="75"
-                    height="75"
+                    width="50"
+                    height="50"
                     stroke-width="5"
                     stroke="black"
                     fill="${fillColor}" />`;
@@ -97,10 +97,10 @@ function rotateShips() {
     drawShip("#submarine", 3, "#E94F37", "default", null, 325);
     drawShip("#boat", 2, "#F6F7EB", "default", null, 425);
   } else if (direction === "rotated") {
-    drawShip("#carrier", 5, "#44BBA4", "rotated", 1100, null);
-    drawShip("#battleship", 4, "#ffae42", "rotated", 1200, null);
-    drawShip("#destroyer", 3, "#114B5F", "rotated", 1300, null);
-    drawShip("#submarine", 3, "#E94F37", "rotated", 1400, null);
-    drawShip("#boat", 2, "#F6F7EB", "rotated", 1500, null);
+    drawShip("#carrier", 5, "#44BBA4", "rotated", 900, null);
+    drawShip("#battleship", 4, "#ffae42", "rotated", 1000, null);
+    drawShip("#destroyer", 3, "#114B5F", "rotated", 1100, null);
+    drawShip("#submarine", 3, "#E94F37", "rotated", 1200, null);
+    drawShip("#boat", 2, "#F6F7EB", "rotated", 1300, null);
   }
 }
