@@ -36,7 +36,7 @@
 <div class="container-fluid">
     {{#if isGameRoom}}
     <div class="row p-4">
-        <svg id="svg-wrapper" class="card bg-light">
+        <svg id="svg-wrapper" class="card col-md-11 bg-light">
             <g id="board"></g>
             <g id="carrier"></g>
             <g id="battleship"></g>
@@ -44,6 +44,11 @@
             <g id="submarine"></g>
             <g id="boat"></g>
         </svg>
+
+        <div class="col-md-1 p-4 bg-light">
+            <button id="rotate-btn" class="btn btn-outline-primary btn-large btn-block">Rotate</button>
+            <button id="leave-btn" class="btn btn-outline-danger btn-large btn-block">Leave</button>
+        </div>
     </div>
     {{/if}}
 
@@ -71,12 +76,6 @@
         </div>
         {{/if}}
     </div>
-
-    {{#if isGameRoom}}
-    <div class="row p-4">
-        <button id="leave-btn" class="btn btn-outline-primary">Leave</button>
-    </div>
-    {{/if}}
 </div>
 
 <div id="alert-modal" class="modal fade" tabindex="-1" role="dialog">
