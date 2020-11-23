@@ -13,3 +13,9 @@ const COOKIE_GAME_ROOM_ID = "gameRoomId";
 
 const WAITING_ROOM_WEBSOCKET_URL = `ws://${location.hostname}:${location.port}/waiting-room`;
 const GAME_ROOM_WEBSOCKET_URL = `ws://${location.hostname}:${location.port}/game-room`;
+
+const CARRIER = "carrier";
+const BATTLESHIP = "battleship";
+const DESTROYER = "destroyer";
+const SUBMARINE = "submarine";
+const BOAT = "boat";

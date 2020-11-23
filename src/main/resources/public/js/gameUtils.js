@@ -1,3 +1,29 @@
+let selectedShip, selectedShipType;
+
+// Map of ship type to length
+const SHIPS = {
+  carrier: {
+    size: 5,
+    color: "#44BBA4",
+  },
+  battleship: {
+    size: 4,
+    color: "#ffae42",
+  },
+  destroyer: {
+    size: 3,
+    color: "#114B5F",
+  },
+  submarine: {
+    size: 3,
+    color: "#E94F37",
+  },
+  boat: {
+    size: 2,
+    color: "#F6F7EB",
+  },
+};
+
 /**
  * Prepares the player's game board
  */
@@ -6,13 +32,22 @@ function drawBoard() {
     x,
     y;
 
+  const boardCellIds = [];
+
   // Draw the cells
   for (let i = 0; i < 10; i++) {
     for (let j = 0; j < 10; j++) {
-      x = 50 * i + 50;
-      y = 50 * j + 20;
+      console.log(`${i}${j}`);
 
-      board += `<rect id="cell_${i}_${j}" 
+      y = 50 * i + 20;
+      x = 50 * j + 50;
+
+      const id = `cell_${i}_${j}`;
+      boardCellIds.push(id);
+
+      board += `<rect id="${id}" 
+                        data-row="${i}"
+                        data-col="${j}"
                         x="${x}" 
                         y="${y}" 
                         width="50" 
@@ -31,31 +66,58 @@ function drawBoard() {
    *   Submarine   (3)
    *   Patrol Boat (2)
    */
-  drawShip("#carrier", 5, "#44BBA4", "default", null, 25);
-  drawShip("#battleship", 4, "#ffae42", "default", null, 125);
-  drawShip("#destroyer", 3, "#114B5F", "default", null, 225);
-  drawShip("#submarine", 3, "#E94F37", "default", null, 325);
-  drawShip("#boat", 2, "#F6F7EB", "default", null, 425);
+  drawShip(CARRIER, "default", null, 25);
+  drawShip(BATTLESHIP, "default", null, 125);
+  drawShip(DESTROYER, "default", null, 225);
+  drawShip(SUBMARINE, "default", null, 325);
+  drawShip(BOAT, "default", null, 425);
 
   localStorage.setItem("shipsDirection", "default");
 
-  document.querySelector("#board").innerHTML = board;
+  const boardSvgElement = document.querySelector("#board");
+  boardSvgElement.innerHTML = board;
+
+  // Prepare event listener for each cell
+  for (const id of boardCellIds) {
+    const cellSvgElement = document.querySelector(`#${id}`);
+
+    cellSvgElement.addEventListener("mouseenter", (e) => {
+      if (selectedShip) {
+        e.target.style.fill = "red";
+      }
+    });
+
+    cellSvgElement.addEventListener("mouseleave", (e) => {
+      const cellFillColor = e.target.style.fill;
+
+      if (selectedShip) {
+        e.target.style.fill = cellFillColor;
+      }
+    });
+
+    cellSvgElement.addEventListener("click", (e) => {
+      if (selectedShip) {
+        placeShip(selectedShipType, e.target.dataset.row, e.target.dataset.col);
+      }
+    });
+  }
 }
 
 /**
  * Prepares the ships for the game
- * @param {String} id
- * @param {Number} length
- * @param {String} fillColor
+ * @param {String} type
  * @param {String} direction
  * @param {Number} defaultX
  * @param {Number} defaultY
  */
-function drawShip(id, length, fillColor, direction, defaultX, defaultY) {
-  let ship = "";
-  let x, y;
+function drawShip(type, direction, defaultX, defaultY) {
+  let ship = "",
+    x,
+    y;
 
-  for (let i = 0; i < length; i++) {
+  const shipData = SHIPS[type];
+
+  for (let i = 0; i < shipData.size; i++) {
     if (direction === "default") {
       x = 50 * i + 900;
       y = defaultY;
@@ -70,10 +132,20 @@ function drawShip(id, length, fillColor, direction, defaultX, defaultY) {
                     height="50"
                     stroke-width="5"
                     stroke="black"
-                    fill="${fillColor}" />`;
+                    fill="${shipData.color}" />`;
   }
 
-  document.querySelector(id).innerHTML = ship;
+  const shipSvgElement = document.querySelector(`#${type}`);
+  shipSvgElement.innerHTML = ship;
+
+  shipSvgElement.addEventListener("click", () => {
+    selectedShip = shipSvgElement;
+    selectedShipType = type;
+
+    document.querySelector(
+      "#selected-piece"
+    ).innerHTML = `Currently selected ${type}`;
+  });
 }
 
 /**
@@ -91,16 +163,45 @@ function rotateShips() {
   document.querySelector("#boat").innerHTML = "";
 
   if (direction === "default") {
-    drawShip("#carrier", 5, "#44BBA4", "default", null, 25);
-    drawShip("#battleship", 4, "#ffae42", "default", null, 125);
-    drawShip("#destroyer", 3, "#114B5F", "default", null, 225);
-    drawShip("#submarine", 3, "#E94F37", "default", null, 325);
-    drawShip("#boat", 2, "#F6F7EB", "default", null, 425);
+    drawShip(CARRIER, "default", null, 25);
+    drawShip(BATTLESHIP, "default", null, 125);
+    drawShip(DESTROYER, "default", null, 225);
+    drawShip(SUBMARINE, "default", null, 325);
+    drawShip(BOAT, "default", null, 425);
   } else if (direction === "rotated") {
-    drawShip("#carrier", 5, "#44BBA4", "rotated", 900, null);
-    drawShip("#battleship", 4, "#ffae42", "rotated", 1000, null);
-    drawShip("#destroyer", 3, "#114B5F", "rotated", 1100, null);
-    drawShip("#submarine", 3, "#E94F37", "rotated", 1200, null);
-    drawShip("#boat", 2, "#F6F7EB", "rotated", 1300, null);
+    drawShip(CARRIER, "rotated", 900, null);
+    drawShip(BATTLESHIP, "rotated", 1000, null);
+    drawShip(DESTROYER, "rotated", 1100, null);
+    drawShip(SUBMARINE, "rotated", 1200, null);
+    drawShip(BOAT, "rotated", 1300, null);
+  }
+}
+
+/**
+ * Given the ship type, use the currently selected direction of ships to place the ship on the board
+ *
+ * @param {String} type
+ * @param {Number} row
+ * @param {Number} col
+ */
+function placeShip(type, row, col) {
+  const shipData = SHIPS[type];
+  console.log(shipData);
+  const direction = localStorage.getItem("shipsDirection");
+
+  console.log(`Starting cell at ${row} ${col}`);
+
+  if (direction === "default") {
+    for (let i = col; i < col + shipData.size; i++) {
+      const cellId = `cell_${row}_${i}`;
+
+      console.log(cellId);
+
+      const cellSvgElement = document.querySelector(`#${cellId}`);
+
+      cellSvgElement.style.fill = shipData.color;
+      cellSvgElement.style.stroke = "black";
+    }
+  } else if (direction === "rotated") {
   }
 }
