@@ -37,8 +37,6 @@ function drawBoard() {
   // Draw the cells
   for (let i = 0; i < 10; i++) {
     for (let j = 0; j < 10; j++) {
-      console.log(`${i}${j}`);
-
       y = 50 * i + 20;
       x = 50 * j + 50;
 
@@ -88,17 +86,7 @@ function drawBoard() {
     });
 
     cellSvgElement.addEventListener("mouseleave", (e) => {
-      const cellFillColor = e.target.style.fill;
-
-      if (selectedShip) {
-        e.target.style.fill = cellFillColor;
-      }
-    });
-
-    cellSvgElement.addEventListener("click", (e) => {
-      if (selectedShip) {
-        placeShip(selectedShipType, e.target.dataset.row, e.target.dataset.col);
-      }
+      e.target.style.fill = "#0077be";
     });
   }
 }
@@ -174,34 +162,5 @@ function rotateShips() {
     drawShip(DESTROYER, "rotated", 1100, null);
     drawShip(SUBMARINE, "rotated", 1200, null);
     drawShip(BOAT, "rotated", 1300, null);
-  }
-}
-
-/**
- * Given the ship type, use the currently selected direction of ships to place the ship on the board
- *
- * @param {String} type
- * @param {Number} row
- * @param {Number} col
- */
-function placeShip(type, row, col) {
-  const shipData = SHIPS[type];
-  console.log(shipData);
-  const direction = localStorage.getItem("shipsDirection");
-
-  console.log(`Starting cell at ${row} ${col}`);
-
-  if (direction === "default") {
-    for (let i = col; i < col + shipData.size; i++) {
-      const cellId = `cell_${row}_${i}`;
-
-      console.log(cellId);
-
-      const cellSvgElement = document.querySelector(`#${cellId}`);
-
-      cellSvgElement.style.fill = shipData.color;
-      cellSvgElement.style.stroke = "black";
-    }
-  } else if (direction === "rotated") {
   }
 }
