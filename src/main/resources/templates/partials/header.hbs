@@ -19,8 +19,33 @@
     <nav class="navbar navbar-dark bg-dark">
         <span id="navTitle" class="navbar-brand mb-0 h1">Battleship</span>
         {{#if started}}
-        <span class="navbar-text">
-            Hello, {{username}}
-        </span>
+            <div>
+            <span class="navbar-text">
+                Hello, {{username}}
+            </span>
+
+                &nbsp;
+
+                <button id="logoutBtn" class="btn btn-outline-primary">Logout</button>
+            </div>
         {{/if}}
     </nav>
+
+    <script>
+        document.querySelector("#logoutBtn").addEventListener("click", async () => {
+            try {
+                const res = await fetch("/api/user/logout", {
+                    method: "POST"
+                });
+
+                if (res.status === 200) {
+                    window.location.replace("/");
+                }
+            } catch (e) {
+                console.log(e);
+                alert("Error with request!");
+            }
+        });
+
+
+    </script>
