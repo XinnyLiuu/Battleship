@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
-    private static final String URL = "jdbc:mysql://localhost:3306/battleship?user=root&password=password";
+    private static final String URL = "jdbc:mysql://localhost/battleship?user=root&password=password";
 
     /**
      * Returns the connection object to the database
